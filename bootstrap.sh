@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Script para transformar la raspberry pi (3) en un pequeño emulador WAN.
 #
@@ -61,6 +61,19 @@ NETMASK_HASH[30]=255.255.255.252
 NETMASK_HASH[31]=255.255.255.254
 NETMASK_HASH[32]=255.255.255.255
 
+# Desactivacion de swap
+# ---------------------------------------------------------
+
+echo
+echo Desactivando swap...
+
+sync
+swapoff -a
+update-rc.d dphys-swapfile disable
+systemctl disable dphys-swapfile
+systemctl stop dphys-swapfile
+echo OK
+
 # Instalacion de paquetes
 # ---------------------------------------------------------
 
@@ -68,8 +81,34 @@ echo
 echo Instalando paquetes de software...
 
 DEBIAN_FRONTEND=noninteractive apt-get install -y \
-  vlan netfilter-persistent iptables-persistent lldpd dnsmasq quagga
+  vlan netfilter-persistent iptables-persistent lldpd dnsmasq quagga \
+  busybox-syslogd
 echo OK
+
+DEBIAN_FRONTEND=noninteractive dpkg --purge rsyslog
+
+echo
+echo "************************************************************"
+echo "Reemplazado rsyslog por busybox-syslogd. Para ver los logs"
+echo "del sistema, utiliza el comando ** logread ** !!!"
+echo "************************************************************"
+echo
+
+# Instalación de docker
+# ---------------------------------------------------------
+
+echo
+echo Instalando docker...
+
+which docker || (curl -sSL get.docker.com | sh)
+echo OK
+
+echo
+echo "************************************************************"
+echo "Docker instalado. Recuerda prefijar las imagenes con armhf/"
+echo "(por ejemplo: docker pull armhf/golang)"
+echo "************************************************************"
+echo
 
 # Activacion de routing
 # ---------------------------------------------------------
@@ -189,13 +228,23 @@ echo    # (optional) move to a new line
 if [[ $REPLY =~ ^[YysS]$ ]]
 then
   useradd -m admin
-  usermod -a -G sudo,quagga,quaggavty admin
+  usermod -a -G sudo,quagga,quaggavty,docker admin
   echo Por favor, introduzca la nueva password del usuario.
   passwd admin
+
+#  ADMIN_UID=`id -u admin`
+#  ADMIN_GID=`id -g admin`
+#  if ! grep -q '^admin:' /etc/subuid; then
+#    echo "admin:${ADMIN_UID}:1" >> /etc/subuid
+#  fi
+#  if ! grep -q '^admin:' /etc/subgid; then
+#    echo "admin:${ADMIN_GID}:1" >> /etc/subgid
+#  fi
+
 else
-  echo "**************************************************************"
-  echo "OK, pero mete a tu usuario en los grupos quagga, quaggavty!   "
-  echo "**************************************************************"
+  echo "********************************************************************"
+  echo "OK, pero mete a tu usuario en los grupos quagga, quaggavty, docker! "
+  echo "********************************************************************"
 fi
 
 # Eliminacion de usuario por defecto
@@ -294,5 +343,7 @@ echo Activando servicios para el arranque...
 sudo systemctl enable lldpd
 sudo systemctl enable netfilter-persistent
 sudo systemctl enable quagga
+sudo systemctl enable busybox-syslogd
+sudo systemctl enable docker
 echo OK
 

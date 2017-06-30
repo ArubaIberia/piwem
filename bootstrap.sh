@@ -386,6 +386,14 @@ go install
 echo OK
 
 echo
+echo -n Creando usuario ipbot...
+
+if ! id ipbot; then
+  useradd -s /bin/false ipbot
+fi
+echo " OK"
+
+echo
 read -p "Si tienes una clave de API telegram, pégala aqui: " -r
 echo    # (optional) move to a new line
 if [[ ! -z "${REPLY// }" ]]; then
@@ -397,7 +405,7 @@ cat <<EOF > /etc/systemd/system/ipbot.service
 [Unit]
 Description = Robot IPbot para gestionar la raspi
 After = network.target
-User = docker
+User = ipbot
 [Service]
 ExecStart = /opt/bin/ipbot -token "${REPLY}"
 [Install]

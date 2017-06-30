@@ -82,7 +82,7 @@ echo Instalando paquetes de software...
 
 DEBIAN_FRONTEND=noninteractive apt-get install -y \
   vlan netfilter-persistent iptables-persistent lldpd dnsmasq quagga \
-  busybox-syslogd
+  busybox-syslogd git
 echo OK
 
 DEBIAN_FRONTEND=noninteractive dpkg --purge rsyslog
@@ -347,6 +347,69 @@ for index in ${!VLAN[@]}; do
   echo " OK"
 
 done
+
+# Entorno de desarrollo golang
+# ---------------------------------------------------------
+
+echo
+echo Descargando entorno de desarrollo golang...
+
+cd /usr/local
+if [ ! -d go ]; then
+  rm -f go1.8.linux-armv6l.tar.gz
+  wget https://storage.googleapis.com/golang/go1.8.linux-armv6l.tar.gz
+  tar -xzvf go1.8.linux-armv6l.tar.gz
+fi
+
+export GOPATH=/opt
+export PATH=$PATH:/usr/local/go/bin
+echo OK
+
+# Aplicacion IPBot
+# ---------------------------------------------------------
+
+echo
+echo Descargando aplicacion ipbot...
+
+mkdir -p /opt/src/github.com/rafahpe
+cd /opt/src/github.com/rafahpe
+if ! git clone https://github.com/rafahpe/ipbot.git; then
+  cd ipbot
+  git pull
+fi
+echo OK
+
+echo
+echo Compilando ipbot...
+go get
+go install
+echo OK
+
+echo
+read -p "Si tienes una clave de API telegram, pégala aqui: " -r
+echo    # (optional) move to a new line
+if [[ ! -z "${REPLY// }" ]]; then
+
+echo
+echo Creando servicio para ipbot...
+
+cat <<EOF > /etc/systemd/system/ipbot.service
+[Unit]
+Description = Robot IPbot para gestionar la raspi
+After = network.target
+User = docker
+[Service]
+ExecStart = /opt/bin/ipbot -token "${REPLY}"
+[Install]
+WantedBy = multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable ipbot
+systemctl start ipbot
+echo OK
+
+fi
 
 # Activacion de servicios
 # ---------------------------------------------------------

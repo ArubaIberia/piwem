@@ -204,7 +204,7 @@ EOF
   # Hago que se levante despues de eth0
   echo -n Agregando "post-up ifup eth0.${VLAN[$index]}" a eth0...
 
-  sed -i "/^iface eth0 inet dhcp/a post-up ifup eth0.${VLAN[$index]}" $IF_FILE
+  sed -i "/^iface eth0 inet dhcp/a post-up ifup eth0.${VLAN[$index]} || true" $IF_FILE
   echo " OK"
 
 done

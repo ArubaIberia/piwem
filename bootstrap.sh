@@ -149,6 +149,14 @@ fi
 modprobe 8021q
 echo " OK"
 
+echo
+echo -n Activando el modulo ifb...
+if ! grep -q ifb /etc/modules; then
+  echo ifb >> /etc/modules
+fi
+modprobe ifb
+echo " OK"
+
 # Configuracion de las interfaces de red secundarias:
 # una interfaz por cada VLAN declarada.
 # ---------------------------------------------------------
@@ -175,15 +183,21 @@ echo " OK"
 
 for index in ${!VLAN[@]}; do
 
-  # Defino la interfaz eth0.$vlan
+  # Defino la interfaz eth0.$vlan.
+  # Para entender la interfaz ifb$index interna, ver
+  # https://wiki.linuxfoundation.org/networking/netem
   echo
-  echo -n Agregando VLAN ${VLAN[$index]} a ${IF_FILE}...
+  echo Agregando VLAN ${VLAN[$index]} a ${IF_FILE}...
+  echo Se crearan interfaces eth0.${VLAN[$index]} e ifb${index}
 
   cat <<EOF >> ${IF_FILE}
 
 iface eth0.${VLAN[$index]} inet static
   address ${IPADDR[$index]}
   netmask ${NETMASK_HASH[${BITMASK[$index]}]}
+  post-up ip link set dev ifb${index} up
+  post-up tc qdisc add dev eth0.${VLAN[$index]} ingress
+  post-up tc filter add dev eth0.${VLAN[$index]} parent ffff: protocol ip u32 match u32 0 0 flowid 1:1 action mirred egress redirect dev ifb${index}
 EOF
   echo " OK"
 

@@ -257,7 +257,7 @@ echo    # (optional) move to a new line
 if [[ $REPLY =~ ^[YysS]$ ]]
 then
   useradd -m admin
-  usermod -a -G sudo,quagga,quaggavty,docker admin
+  usermod -a -G sudo,quagga,quaggavty,docker,adm admin
   echo Por favor, introduzca la nueva password del usuario.
   passwd admin
 
@@ -271,9 +271,9 @@ then
 #  fi
 
 else
-  echo "********************************************************************"
-  echo "OK, pero mete a tu usuario en los grupos quagga, quaggavty, docker! "
-  echo "********************************************************************"
+  echo "************************************************************************"
+  echo "OK, pero mete a tu usuario en los grupos adm, quagga, quaggavty, docker!"
+  echo "************************************************************************"
 fi
 
 # Eliminacion de usuario por defecto

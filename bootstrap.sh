@@ -148,7 +148,9 @@ echo Configurando NAT en interfaz eth0...
 
 iptables -t nat -F POSTROUTING
 iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
-netfilter-persistent save
+# netfilter-persistent doesn't seem to save things properly...
+# netfilter-persistent save
+iptables-save > /etc/iptables/rules.v4
 echo OK
 
 # Instalacion de modulos
@@ -369,9 +371,9 @@ echo Descargando entorno de desarrollo golang...
 
 cd /usr/local
 if [ ! -d go ]; then
-  rm -f go1.8.linux-armv6l.tar.gz
-  wget https://storage.googleapis.com/golang/go1.8.linux-armv6l.tar.gz
-  tar -xzvf go1.8.linux-armv6l.tar.gz
+  rm -f go1.9.linux-armv6l.tar.gz
+  wget https://storage.googleapis.com/golang/go1.9.linux-armv6l.tar.gz
+  tar -xzvf go1.9.linux-armv6l.tar.gz
 fi
 
 export GOPATH=/opt

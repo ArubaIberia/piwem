@@ -140,8 +140,6 @@ for i in net.ipv6.conf.all.disable_ipv6 net.ipv6.conf.default.disable_ipv6 net.i
 done
 echo " OK"
 
-exit
-
 # Masquerading de la interfaz eth0
 # ---------------------------------------------------------
 

@@ -148,6 +148,9 @@ echo Configurando NAT en interfaz eth0...
 
 iptables -t nat -F POSTROUTING
 iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+# This is a fix for some problem detected in particular versions of
+# raspbian and docker, the FORWARDING chain gets a DROP policy
+iptables -P FORWARD ACCEPT
 # netfilter-persistent doesn't seem to save things properly...
 # netfilter-persistent save
 iptables-save > /etc/iptables/rules.v4

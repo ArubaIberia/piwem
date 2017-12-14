@@ -6,7 +6,7 @@ The goal of this project is to have the Raspberry Pi turned into a small one-arm
 
 The raspberry sits between the actual CPE router and the SD-WAN gateway, providing two links (VLAN 4094 and VLAN 4093) that can be managed independently, as shown below:
 
-[[https://github.com/rafahpe/piwem/blob/master/img/topology.png|alt=topology]]
+![Topology](img/topology.png)
 
 ## Managing your emulator
 

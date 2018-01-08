@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 #
-# Script para transformar la raspberry pi (3) en un pequeño emulador WAN.
+# Script to turn a raspberry pi (3) in a poor man's WAN emulator.
 #
-# Agrega interfaces VLAN a la raspberry, que se pueden utilizar para
-# introducir retardos o perdidas de paquetes con "tc".
+# Adds VLAN interfaces to the raspberry, which can be used to add delays
+# or packet loss using "tc" commands.
 #
 
 VLAN[0]=4094
@@ -24,8 +24,8 @@ DHCP_LEASE[1]=4h
 
 OSPF_AREA=0.0.0.1
 
-# A partir de aqui, no deberia ser necesario tocar
-# ---------------------------------------------------------
+# No need to change anything below this line
+# ------------------------------------------
 
 NETMASK_HASH[0]=0.0.0.0
 NETMASK_HASH[1]=128.0.0.0
@@ -61,11 +61,12 @@ NETMASK_HASH[30]=255.255.255.252
 NETMASK_HASH[31]=255.255.255.254
 NETMASK_HASH[32]=255.255.255.255
 
-# Desactivacion de swap
+# Disable swap - not required, but helps avoiding
+# storage corruption in case the raspi is suddenly powered off
 # ---------------------------------------------------------
 
 echo
-echo Desactivando swap...
+echo Disabling swap...
 
 sync
 swapoff -a
@@ -74,11 +75,11 @@ systemctl disable dphys-swapfile
 systemctl stop dphys-swapfile
 echo OK
 
-# Instalacion de paquetes
+# Installing required software packages
 # ---------------------------------------------------------
 
 echo
-echo Instalando paquetes de software...
+echo Installing software packages...
 
 DEBIAN_FRONTEND=noninteractive apt-get install -y \
   vlan netfilter-persistent iptables-persistent lldpd dnsmasq quagga \
@@ -89,34 +90,34 @@ DEBIAN_FRONTEND=noninteractive dpkg --purge rsyslog
 
 echo
 echo "************************************************************"
-echo "Reemplazado rsyslog por busybox-syslogd. Para ver los logs"
-echo "del sistema, utiliza el comando ** logread ** !!!"
+echo "rsyslog has been replaced by busybox-syslogd. To check system"
+echo "logs from now on, use ** logread ** !!!"
 echo "************************************************************"
 echo
 
-# Instalación de docker
+# Installing docker
 # ---------------------------------------------------------
 
 echo
-echo Instalando docker...
+echo Installing docker...
 
 which docker || (curl -sSL get.docker.com | sh)
 echo OK
 
 echo
 echo "************************************************************"
-echo "Docker instalado. Recuerda prefijar las imagenes con armhf/"
-echo "(por ejemplo: docker pull armhf/golang)"
+echo "Docker installed. Remember to prefix image names with armhf/"
+echo "(e.g.: docker pull armhf/golang)"
 echo "************************************************************"
 echo
 
-# Activacion de routing
+# Enabling routing
 # ---------------------------------------------------------
 
 SYSCTL_FILE=/etc/sysctl.conf
 
 echo
-echo -n Activando net.ipv4.ip_forward en ${SYSCTL_FILE}...
+echo -n Enabling net.ipv4.ip_forward in ${SYSCTL_FILE}...
 
 if ! grep -q net\.ipv4\.ip_forward ${SYSCTL_FILE}; then
   echo "net.ipv4.ip_forward=1" >> ${SYSCTL_FILE}
@@ -128,7 +129,7 @@ sysctl net.ipv4.ip_forward=1 >/dev/null
 echo " OK"
 
 echo
-echo -n Desactivando IPv6 para evitar errores de checksum en driver de red...
+echo -n Disabling IPv6 (IPv6 may cause checksum errors in network driver...)
 
 for i in net.ipv6.conf.all.disable_ipv6 net.ipv6.conf.default.disable_ipv6 net.ipv6.conf.lo.disable_ipv6; do
   if ! grep -q "$i" ${SYSCTL_FILE}; then
@@ -140,11 +141,11 @@ for i in net.ipv6.conf.all.disable_ipv6 net.ipv6.conf.default.disable_ipv6 net.i
 done
 echo " OK"
 
-# Masquerading de la interfaz eth0
+# Masquerading eth0 interface
 # ---------------------------------------------------------
 
 echo
-echo Configurando NAT en interfaz eth0...
+echo Configuring NAT in eth0 interface...
 
 iptables -t nat -F POSTROUTING
 iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
@@ -156,11 +157,11 @@ iptables -P FORWARD ACCEPT
 iptables-save > /etc/iptables/rules.v4
 echo OK
 
-# Instalacion de modulos
+# Kernel modules
 # ---------------------------------------------------------
 
 echo
-echo -n Activando el modulo 8021q...
+echo -n Enabling 8021q kernel module...
 if ! grep -q 8021q /etc/modules; then
   echo 8021q >> /etc/modules
 fi
@@ -168,22 +169,21 @@ modprobe 8021q
 echo " OK"
 
 echo
-echo -n Activando el modulo ifb...
+echo -n Enabling ifb kernel module...
 if ! grep -q ifb /etc/modules; then
   echo ifb >> /etc/modules
 fi
 modprobe ifb
 echo " OK"
 
-# Configuracion de las interfaces de red secundarias:
-# una interfaz por cada VLAN declarada.
+# Secondary network interfaces (one per VLAN):
 # ---------------------------------------------------------
 
 export IF_FILE=/etc/network/interfaces
 export IF_DIR=/etc/network/interfaces.d
 
 echo
-echo -n Sobrescribiendo ${IF_FILE} con plantilla...
+echo -n Overwriting ${IF_FILE} with template config...
 
 cat <<EOF >${IF_FILE}
 auto lo
@@ -201,12 +201,12 @@ echo " OK"
 
 for index in ${!VLAN[@]}; do
 
-  # Defino la interfaz eth0.$vlan.
-  # Para entender la interfaz ifb$index interna, ver
+  # Definition of eth0.$vlan subinterface.
+  # For more details on the internal ifb$index interface, see
   # https://wiki.linuxfoundation.org/networking/netem
   echo
-  echo Agregando VLAN ${VLAN[$index]} a ${IF_FILE}...
-  echo Se crearan interfaces eth0.${VLAN[$index]} e ifb${index}
+  echo Adding VLAN ${VLAN[$index]} to ${IF_FILE}...
+  echo Interfaces eth0.${VLAN[$index]} and ifb${index} will be created
 
   cat <<EOF >> ${IF_FILE}
 
@@ -219,15 +219,15 @@ iface eth0.${VLAN[$index]} inet static
 EOF
   echo " OK"
 
-  # Hago que se levante despues de eth0
-  echo -n Agregando "post-up ifup eth0.${VLAN[$index]}" a eth0...
+  # Set the eth0.VLAN interface to get up after eth0
+  echo -n Adding "post-up ifup eth0.${VLAN[$index]}" to eth0...
 
   sed -i "/^iface eth0 inet dhcp/a post-up ifup eth0.${VLAN[$index]} || true" $IF_FILE
   echo " OK"
 
 done
 
-# Servidores DHCP en interfaces VLAN
+# DHCP service in VLAN interfaces
 # ---------------------------------------------------------
 
 DNS_FILE=/etc/dnsmasq.conf
@@ -240,9 +240,9 @@ fi
 
 for index in ${!VLAN[@]}; do
 
-  # Permito dnsmasq en la interfaz VLAN
+  # Allow dnsmasq in VLAN interface
   echo
-  echo -n Configurando DHCP en ${DNS_DIR}/eth0-${VLAN[$index]}.conf...
+  echo -n Enabling DHCP in ${DNS_DIR}/eth0-${VLAN[$index]}.conf...
   cat <<EOF > ${DNS_DIR}/eth0-${VLAN[$index]}.conf
 interface=eth0.${VLAN[$index]}
 dhcp-range=eth0.${VLAN[$index]},${DHCP_START[$index]},${DHCP_END[$index]},${DHCP_LEASE[$index]}
@@ -251,17 +251,17 @@ EOF
 
 done
 
-# Creacion de usuario admin
+# admin user
 # ---------------------------------------------------------
 
 echo
-read -p "Quieres crear un nuevo usuario admin? [y/N] " -n 1 -r
+read -p "Do you want to create a new admin user? [y/N] " -n 1 -r
 echo    # (optional) move to a new line
 if [[ $REPLY =~ ^[YysS]$ ]]
 then
   useradd -m admin
   usermod -a -G sudo,quagga,quaggavty,docker,adm admin
-  echo Por favor, introduzca la nueva password del usuario.
+  echo "Please, type the new password for privileged user 'admin': "
   passwd admin
 
 #  ADMIN_UID=`id -u admin`
@@ -274,27 +274,27 @@ then
 #  fi
 
 else
-  echo "************************************************************************"
-  echo "OK, pero mete a tu usuario en los grupos adm, quagga, quaggavty, docker!"
-  echo "************************************************************************"
+  echo "*****************************************************************************"
+  echo "OK, but make sure you add your user to groups adm, quagga, quaggavty, docker!"
+  echo "******************************************************************************"
 fi
 
-# Eliminacion de usuario por defecto
+# Removing default users
 # ---------------------------------------------------------
 
 echo
-read -p "Quieres borrar el usuario predefinido pi? [y/N] " -n 1 -r
+read -p "Do you want to remove the predefined user 'pi'? [y/N] " -n 1 -r
 echo    # (optional) move to a new line
 if [[ $REPLY =~ ^[YysS]$ ]]
 then
   userdel pi
 else
-  echo "**************************************************************"
-  echo "OK, se deja el usuario, pero cambiale el password por defecto!"
-  echo "**************************************************************"
+  echo "***************************************************************"
+  echo "OK, user 'pi' not removed, but remember to change its password!"
+  echo "***************************************************************"
 fi
 
-# Configurando el routing
+# Configuring routing
 # ---------------------------------------------------------
 
 DAEMON_FILE=/etc/quagga/daemons
@@ -303,13 +303,13 @@ ZEBRA_FILE=/etc/quagga/zebra.conf
 OSPFD_FILE=/etc/quagga/ospfd.conf
 
 echo
-echo Activando routing estatico y OSPF en DAEMON_FILE...
+echo Adding static and OSPF routing to DAEMON_FILE...
 
 sed -i 's/^zebra=.*$/zebra=yes/;s/^ospfd=.*$/ospfd=yes/' $DAEMON_FILE
 echo " OK"
 
 echo
-echo Instalando plantilla de ${VTYSH_FILE}...
+echo Adding ${VTYSH_FILE} template...
 
 cat <<EOF > ${VTYSH_FILE}
 ! Sample configuration file for vtysh.
@@ -321,7 +321,7 @@ EOF
 echo " OK"
 
 echo
-echo Instalando plantilla de ${ZEBRA_FILE}...
+echo Adding ${ZEBRA_FILE} template...
 
 cat <<EOF > ${ZEBRA_FILE}
 hostname RPi-zebra
@@ -332,7 +332,7 @@ EOF
 echo " OK"
 
 echo
-echo Instalando plantilla de ${OSPFD_FILE}...
+echo Adding ${OSPFD_FILE} template...
 
 cat <<EOF > ${OSPFD_FILE}
 !
@@ -357,7 +357,7 @@ echo " OK"
 for index in ${!VLAN[@]}; do
 
   echo
-  echo Agregando vlan ${VLAN[$index]} a ${OSPFD_FILE}...
+  echo Adding vlan ${VLAN[$index]} to ${OSPFD_FILE}...
   sed -i "/^interface eth0\$/a interface eth0.${VLAN[$index]}" $OSPFD_FILE
   sed -i "/^ network 127.0.0.0/a\
     network ${NETWORK[$index]}/${BITMASK[$index]} area ${OSPF_AREA}" \
@@ -366,11 +366,11 @@ for index in ${!VLAN[@]}; do
 
 done
 
-# Entorno de desarrollo golang
+# golang development environment
 # ---------------------------------------------------------
 
 echo
-echo Descargando entorno de desarrollo golang...
+echo Downloading golang development environment...
 
 cd /usr/local
 if [ ! -d go ]; then
@@ -383,11 +383,11 @@ export GOPATH=/opt
 export PATH=$PATH:/usr/local/go/bin
 echo OK
 
-# Aplicacion IPBot
+# IPBot application
 # ---------------------------------------------------------
 
 echo
-echo Descargando aplicacion ipbot...
+echo Downloading ipbot application...
 
 mkdir -p /opt/src/github.com/rafahpe
 cd /opt/src/github.com/rafahpe
@@ -398,13 +398,13 @@ fi
 echo OK
 
 echo
-echo Compilando ipbot...
+echo Compiling ipbot...
 go get
 go install
 echo OK
 
 echo
-echo -n Creando usuario ipbot...
+echo -n Creating ipbot user...
 
 if ! id ipbot; then
   useradd -s /bin/false ipbot
@@ -412,7 +412,7 @@ fi
 echo " OK"
 
 echo
-read -p "Si tienes una clave de API telegram, pégala aqui: " -r
+read -p "If you have a telegram API key, please type it: " -r
 echo    # (optional) move to a new line
 if [[ ! -z "${REPLY// }" ]]; then
 
@@ -421,7 +421,7 @@ echo Creando servicio para ipbot...
 
 cat <<EOF > /etc/systemd/system/ipbot.service
 [Unit]
-Description = Robot IPbot para gestionar la raspi
+Description = IPbot telegram bot for raspi management
 After = network.target
 User = ipbot
 [Service]
@@ -437,11 +437,11 @@ echo OK
 
 fi
 
-# Activacion de servicios
+# Enabling services
 # ---------------------------------------------------------
 
 echo
-echo Activando servicios para el arranque...
+echo Enabling boot services...
 
 sudo systemctl enable lldpd
 sudo systemctl enable netfilter-persistent
@@ -449,4 +449,3 @@ sudo systemctl enable quagga
 sudo systemctl enable busybox-syslogd
 sudo systemctl enable docker
 echo OK
-

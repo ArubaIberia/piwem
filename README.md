@@ -12,7 +12,7 @@ The raspberry sits between the actual CPE router and the SD-WAN gateway, providi
 
 To manage your emulator, you will need to create a [telegram chat bot](https://core.telegram.org/bots). The bot will allow you to send commands to your rpi, and receive responses.
 
-The code of the bot is also [shared on github](https://github.com/rafahpe/ipbot). Please have a look there for a quick introduction to the commands the bot accepts.
+The code of the bot is also [shared on github](https://github.com/ArubaIberia/ipbot). Please have a look there for a quick introduction to the commands the bot accepts.
 
 ## Quick Start
 

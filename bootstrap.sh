@@ -129,7 +129,7 @@ sysctl net.ipv4.ip_forward=1 >/dev/null
 echo " OK"
 
 echo
-echo -n Disabling IPv6 (IPv6 may cause checksum errors in network driver...)
+echo -n Disabling IPv6 - IPv6 may cause checksum errors in network driver...
 
 for i in net.ipv6.conf.all.disable_ipv6 net.ipv6.conf.default.disable_ipv6 net.ipv6.conf.lo.disable_ipv6; do
   if ! grep -q "$i" ${SYSCTL_FILE}; then

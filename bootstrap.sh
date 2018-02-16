@@ -199,6 +199,10 @@ iface wlan0 inet manual
 EOF
 echo " OK"
 
+echo
+echo Disabling DHCPCD service...
+update-rc.d dhcpcd disable
+
 for index in ${!VLAN[@]}; do
 
   # Definition of eth0.$vlan subinterface.
@@ -220,10 +224,22 @@ EOF
   echo " OK"
 
   # Set the eth0.VLAN interface to get up after eth0
-  echo -n Adding "post-up ifup eth0.${VLAN[$index]}" to eth0...
-
-  sed -i "/^iface eth0 inet dhcp/a post-up ifup eth0.${VLAN[$index]} || true" $IF_FILE
+  echo -n Adding one-shot service to start eth0.${VLAN[$index]}...
+  cat <<EOF >> "/etc/systemd/system/vlan-${VLAN[$index]}.service"
+[Unit]
+Description = Service to start up VLAN ${VLAN[$index]}
+After = network.target
+[Service]
+Type = oneshot
+ExecStart = /sbin/ifup eth0.${VLAN[$index]}
+RemainAfterExit = true
+StandardOutput = journal
+[Install]
+WantedBy = multi-user.target
+EOF
   echo " OK"
+  systemctl daemon-reload
+  systemctl enable vlan-${VLAN[$index]}
 
 done
 
@@ -423,8 +439,8 @@ cat <<EOF > /etc/systemd/system/ipbot.service
 [Unit]
 Description = IPbot telegram bot for raspi management
 After = network.target
-User = ipbot
 [Service]
+User = ipbot
 ExecStart = /opt/bin/ipbot -token "${REPLY}"
 [Install]
 WantedBy = multi-user.target

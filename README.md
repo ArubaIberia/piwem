@@ -33,7 +33,7 @@ You are also given a few options during installation, such as creating a new adm
 
 ## Controlling your emulator
 
-Your bot should be online few seconds after you reboot the Raspberry (provided the Raspberry gets internet copnnectivity). You cand search your bot by name in telegram, and add it to your contact list. Then send any message (try just sending the word "help"), and wait for the bot to greet you!
+Your bot should be online few seconds after you reboot the Raspberry (provided the Raspberry gets internet connectivity). Search your bot by name in telegram and add it to your contact list. Then send any message (try sending the word "ip"), and wait for the bot to greet you!
 
 The code of the bot is also [shared on github](https://github.com/ArubaIberia/ipbot). Please have a look there for a quick introduction to the commands the bot accepts.
 

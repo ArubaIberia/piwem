@@ -8,20 +8,32 @@ The raspberry sits between the actual CPE router and the SD-WAN gateway, providi
 
 ![Topology](img/topology.png)
 
-## Managing your emulator
+## Prerequisites - Important!
 
-To manage your emulator, you will need to create a [telegram chat bot](https://core.telegram.org/bots). The bot will allow you to send commands to your rpi, and receive responses.
+This emulator is managed through *telegram*. To be able to issue orders to your emulator and get feedback, you will need to create a [telegram chat bot](https://core.telegram.org/bots).
 
-The code of the bot is also [shared on github](https://github.com/ArubaIberia/ipbot). Please have a look there for a quick introduction to the commands the bot accepts.
+Don't worry, you don't need to code. Just follow the instructions in the link above to name your bot and get your API key. Once you have your API key, keep reading.
 
 ## Quick Start
 
 After you have created your [telegram chat bot](https://core.telegram.org/bots) (and got the API key for the bot), just download the script to your raspberry pi, and run it:
 
 ```
+wget https://raw.githubusercontent.com/ArubaIberia/piwem/master/bootstrap.sh
+
 chmod 0755 bootstrap.sh
+
 sudo ./bootstrap.sh
 ```
 
 The script should work best in a freshly installed [Raspbian](https://www.raspberrypi.org/downloads/raspbian), either the lite or desktop version.
-It will download the required packages and ask for the API key when required.
+It will download the required packages and ask for the API key during the process.
+
+You are also given a few options during installation, such as creating a new admin user, or removing the built-in "pi" user. Do whatever suits you better, neither of that is mandatory. 
+
+## Controlling your emulator
+
+Your bot should be online few seconds after you reboot the Raspberry (provided the Raspberry gets internet copnnectivity). You cand search your bot by name in telegram, and add it to your contact list. Then send any message (try just sending the word "help"), and wait for the bot to greet you!
+
+The code of the bot is also [shared on github](https://github.com/ArubaIberia/ipbot). Please have a look there for a quick introduction to the commands the bot accepts.
+

@@ -5,6 +5,8 @@
 # Adds VLAN interfaces to the raspberry, which can be used to add delays
 # or packet loss using "tc" commands.
 #
+# You can tune your VLANs numbers, adresses, bitmasks and scopes here.
+# You can even add more VLANs if you like, up to 8.
 
 VLAN[0]=4094
 IPADDR[0]=10.224.255.1

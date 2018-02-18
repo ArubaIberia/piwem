@@ -466,4 +466,5 @@ sudo systemctl enable netfilter-persistent
 sudo systemctl enable quagga
 sudo systemctl enable busybox-syslogd
 sudo systemctl enable docker
+sudo systemctl enable ssh
 echo OK

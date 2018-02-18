@@ -55,6 +55,6 @@ WantedBy = multi-user.target
 
 If you installed the desktop version of raspbian you probably have a graphical editor available, like *gedit*. Just remember the file is owned by root, so you have to run the editor with *sudo* (`sudo gedit`, for instance).
 
-If you used the like version of raspbian then you will have to do with *sudo vi*, or install an easier text editor such as *nano* beforehand (`sudo apt install -y nano; sudo nano /etc/systemd/system/ipbot.service`).
+If you installed the lite version of raspbian then you will have to use a command-line editor such as *vi* or *nano*. I don't believe *nano* comes already installed in the lite version of raspbian, you probably need to install it first (`sudo apt install -y nano; sudo nano /etc/systemd/system/ipbot.service`).
 
 After updating ypur key, run `sudo systemctl daemon-reload`, just in case, and reboot the raspberry.

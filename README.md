@@ -37,3 +37,24 @@ Your bot should be online few seconds after you reboot the Raspberry (provided t
 
 The code of the bot is also [shared on github](https://github.com/ArubaIberia/ipbot). Please have a look there for a quick introduction to the commands the bot accepts.
 
+
+## Changing the telegram API key
+
+If you didn't provide the telegram API key during installation, typed it wrong, or want to change it for whatever reason, you can do it by creating/editing the file `/etc/systemd/system/ipbot.service` in your raspberry and setting the key in the `ExecStart` line:
+
+```
+[Unit]
+Description = IPbot telegram bot for raspi management
+After = network.target
+[Service]
+User = ipbot
+ExecStart = /opt/bin/ipbot -token "<your API token>"
+[Install]
+WantedBy = multi-user.target
+```
+
+If you installed the desktop version of raspbian you probably have a graphical editor available, like *gedit*. Just remember the file is owned by root, so you have to run the editor with *sudo* (`sudo gedit`, for instance).
+
+If you used the like version of raspbian then you will have to do with *sudo vi*, or install an easier text editor such as *nano* beforehand (`sudo apt install -y nano; sudo nano /etc/systemd/system/ipbot.service`).
+
+After updating ypur key, run `sudo systemctl daemon-reload`, just in case, and reboot the raspberry.

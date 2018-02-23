@@ -62,6 +62,7 @@ If you didn't provide the telegram API key during installation, typed it wrong, 
 Description = IPbot telegram bot for raspi management
 After = network.target
 [Service]
+AmbientCapabilities = CAP_NET_ADMIN
 User = ipbot
 ExecStart = /opt/bin/ipbot -token "<your API token>"
 [Install]

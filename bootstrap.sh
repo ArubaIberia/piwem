@@ -78,13 +78,16 @@ function upgrade_ipbot() {
   mkdir -p /opt/src/github.com/ArubaIberia
   cd /opt/src/github.com/ArubaIberia
   if ! git clone https://github.com/ArubaIberia/ipbot.git; then
+    pushd .
     cd ipbot
     git pull
+    popd
   fi
   echo OK
 
   echo
   echo Compiling ipbot...
+  cd /opt/src/github.com/ArubaIberia/ipbot
   go get
   go install
   echo OK

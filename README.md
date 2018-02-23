@@ -37,6 +37,21 @@ Your bot should be online few seconds after you reboot the Raspberry (provided t
 
 The code of the bot is also [shared on github](https://github.com/ArubaIberia/ipbot). Please have a look there for a quick introduction to the commands the bot accepts.
 
+## Upgrading the bot
+
+Occassionally, some bugfix in the ipbot code may require that you upgrade to a new version. `bootstrap.sh` is still your friend for this, just make sure you download the latest version of the script and run it with the `-u` (or `--upgrade`) parameter:
+
+```
+rm -f bootstrap.sh
+
+wget https://raw.githubusercontent.com/ArubaIberia/piwem/master/bootstrap.sh
+
+chmod 0755 bootstrap.sh
+
+sudo ./bootstrap.sh -u
+```
+
+Those commands will upgrade and restart the ipbot for you.
 
 ## Changing the telegram API key
 

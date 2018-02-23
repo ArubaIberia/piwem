@@ -63,6 +63,65 @@ NETMASK_HASH[30]=255.255.255.252
 NETMASK_HASH[31]=255.255.255.254
 NETMASK_HASH[32]=255.255.255.255
 
+# Functions used somewhere else
+# -----------------------------
+
+export IPBOT_SERVICE=ipbot
+export IPBOT_SERVICE_FILE=/etc/systemd/system/${IPBOT_SERVICE}.service
+
+export GOPATH=/opt
+export PATH=$PATH:/usr/local/go/bin
+
+function upgrade_ipbot() {
+  echo
+  echo Downloading ipbot application...
+  mkdir -p /opt/src/github.com/ArubaIberia
+  cd /opt/src/github.com/ArubaIberia
+  if ! git clone https://github.com/ArubaIberia/ipbot.git; then
+    cd ipbot
+    git pull
+  fi
+  echo OK
+
+  echo
+  echo Compiling ipbot...
+  go get
+  go install
+  echo OK
+
+  echo
+  echo Checking Capabilities...
+  if [ -f ${IPBOT_SERVICE_FILE} ]; then
+    if ! grep -q AmbientCapabilities "${IPBOT_SERVICE_FILE}"; then
+      sed -i '/\[Service\]/a AmbientCapabilities = CAP_NET_ADMIN' \
+        "${IPBOT_SERVICE_FILE}"
+      systemctl daemon-reload
+      systemctl stop  "${IPBOT_SERVICE}"
+      systemctl start "${IPBOT_SERVICE}"
+    fi
+  fi
+  echo OK
+}
+
+# Process command line flags
+# --------------------------
+
+for i in "$@"
+do
+case $i in
+  -u|--upgrade)
+    upgrade_ipbot
+    systemctl stop  "${IPBOT_SERVICE}"
+    systemctl start "${IPBOT_SERVICE}"
+    echo UPGRADE DONE!
+    exit 0
+  ;;
+  *)
+    # unknown option
+  ;;
+esac
+done
+
 # Disable swap - not required, but helps avoiding
 # storage corruption in case the raspi is suddenly powered off
 # ---------------------------------------------------------
@@ -180,7 +239,7 @@ echo " OK"
 
 # Secondary network interfaces (one per VLAN):
 # ---------------------------------------------------------
-
+#
 export IF_FILE=/etc/network/interfaces
 export IF_DIR=/etc/network/interfaces.d
 
@@ -397,29 +456,10 @@ if [ ! -d go ]; then
   tar -xzvf go1.9.linux-armv6l.tar.gz
 fi
 
-export GOPATH=/opt
-export PATH=$PATH:/usr/local/go/bin
 echo OK
 
 # IPBot application
 # ---------------------------------------------------------
-
-echo
-echo Downloading ipbot application...
-
-mkdir -p /opt/src/github.com/rafahpe
-cd /opt/src/github.com/rafahpe
-if ! git clone https://github.com/rafahpe/ipbot.git; then
-  cd ipbot
-  git pull
-fi
-echo OK
-
-echo
-echo Compiling ipbot...
-go get
-go install
-echo OK
 
 echo
 echo -n Creating ipbot user...
@@ -429,19 +469,22 @@ if ! id ipbot; then
 fi
 echo " OK"
 
+upgrade_ipbot
+
 echo
 read -p "If you have a telegram API key, please type it: " -r
 echo    # (optional) move to a new line
 if [[ ! -z "${REPLY// }" ]]; then
 
 echo
-echo Creando servicio para ipbot...
+echo Creating IPBot service...
 
-cat <<EOF > /etc/systemd/system/ipbot.service
+cat <<EOF > ${IPBOT_SERVICE_FILE}
 [Unit]
 Description = IPbot telegram bot for raspi management
 After = network.target
 [Service]
+AmbientCapabilities = CAP_NET_ADMIN
 User = ipbot
 ExecStart = /opt/bin/ipbot -token "${REPLY}"
 [Install]
@@ -449,8 +492,8 @@ WantedBy = multi-user.target
 EOF
 
 systemctl daemon-reload
-systemctl enable ipbot
-systemctl start ipbot
+systemctl enable ${IPBOT_SERVICE}
+systemctl start  ${IPBOT_SERVICE}
 echo OK
 
 fi

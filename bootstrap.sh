@@ -28,7 +28,8 @@ OSPF_AREA=0.0.0.1
 
 # No need to change anything below this line
 # ------------------------------------------
-
+export LC_ALL=C
+ 
 NETMASK_HASH[0]=0.0.0.0
 NETMASK_HASH[1]=128.0.0.0
 NETMASK_HASH[2]=192.0.0.0

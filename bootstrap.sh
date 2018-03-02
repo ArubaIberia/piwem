@@ -340,7 +340,7 @@ read -p "Do you want to create a new admin user? [y/N] " -n 1 -r
 echo    # (optional) move to a new line
 if [[ $REPLY =~ ^[YysS]$ ]]
 then
-  useradd -m admin
+  useradd -s `which bash` -m admin
   usermod -a -G sudo,quagga,quaggavty,docker,adm admin
   echo "Please, type the new password for privileged user 'admin': "
   passwd admin
@@ -510,7 +510,8 @@ echo Enabling boot services...
 
 sudo systemctl enable lldpd
 sudo systemctl enable netfilter-persistent
-sudo systemctl enable quagga
+sudo systemctl enable zebra
+sudo systemctl enable ospfd
 sudo systemctl enable busybox-syslogd
 sudo systemctl enable docker
 sudo systemctl enable ssh

@@ -28,6 +28,7 @@ OSPF_AREA=0.0.0.1
 
 # No need to change anything below this line
 # ------------------------------------------
+export LANG=C
 export LC_ALL=C
  
 NETMASK_HASH[0]=0.0.0.0
@@ -146,19 +147,23 @@ echo OK
 echo
 echo Installing software packages...
 
-DEBIAN_FRONTEND=noninteractive apt-get install -y \
-  vlan netfilter-persistent iptables-persistent lldpd dnsmasq quagga \
-  busybox-syslogd git
+export DEBIAN_FRONTEND=noninteractive
+# Fix for dnsmasq not installing properly
+apt-get update  -y
+apt-get install -y vlan dnsmasq git lldpd quagga \
+  iptables-persistent netfilter-persistent
 echo OK
 
-DEBIAN_FRONTEND=noninteractive dpkg --purge rsyslog
+if apt-get install -y busybox-syslogd; then
+  dpkg --purge rsyslog
 
-echo
-echo "************************************************************"
-echo "rsyslog has been replaced by busybox-syslogd. To check system"
-echo "logs from now on, use ** logread ** !!!"
-echo "************************************************************"
-echo
+  echo
+  echo "************************************************************"
+  echo "rsyslog has been replaced by busybox-syslogd. To check system"
+  echo "logs from now on, use ** logread ** !!!"
+  echo "************************************************************"
+  echo
+fi
 
 # Installing docker
 # ---------------------------------------------------------
@@ -219,6 +224,10 @@ iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
 iptables -P FORWARD ACCEPT
 # netfilter-persistent doesn't seem to save things properly...
 # netfilter-persistent save
+# Fix for iptables folder not yet ready
+if [ ! -d /etc/iptables ]; then
+  mkdir /etc/iptables
+fi
 iptables-save > /etc/iptables/rules.v4
 echo OK
 

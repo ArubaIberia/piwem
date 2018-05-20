@@ -26,6 +26,12 @@ DHCP_LEASE[1]=4h
 
 OSPF_AREA=0.0.0.1
 
+USB_VENDOR=12d1
+USB_PRODUCT=1436
+USB_PHONE=*99***1#
+USB_USER=vodafone
+USB_PASS=vodafone
+
 # No need to change anything below this line
 # ------------------------------------------
 export LANG=C
@@ -151,7 +157,7 @@ export DEBIAN_FRONTEND=noninteractive
 # Fix for dnsmasq not installing properly
 apt-get update  -y
 apt-get install -y vlan dnsmasq git lldpd quagga \
-  iptables-persistent netfilter-persistent
+  iptables-persistent netfilter-persistent wvdial
 echo OK
 
 if apt-get install -y busybox-syslogd; then
@@ -211,7 +217,7 @@ for i in net.ipv6.conf.all.disable_ipv6 net.ipv6.conf.default.disable_ipv6 net.i
 done
 echo " OK"
 
-# Masquerading eth0 interface
+# Masquerading eth0 and ppp0 interfaces
 # ---------------------------------------------------------
 
 echo
@@ -219,6 +225,7 @@ echo Configuring NAT in eth0 interface...
 
 iptables -t nat -F POSTROUTING
 iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+iptables -t nat -A POSTROUTING -o ppp0 -j MASQUERADE
 # This is a fix for some problem detected in particular versions of
 # raspbian and docker, the FORWARDING chain gets a DROP policy
 iptables -P FORWARD ACCEPT
@@ -230,6 +237,61 @@ if [ ! -d /etc/iptables ]; then
 fi
 iptables-save > /etc/iptables/rules.v4
 echo OK
+
+# Enable dial-up on usb modem plug
+# ---------------------------------------------------------
+
+echo
+echo activating wvdial on usb stick recognition
+
+# See http://www.sedlakovi.org/blog/2017/08/connecting-rpi-reliably.html
+# See http://dubsman.gitlab.io/posts/stick-and-wvdial.html
+
+# Add service to run wvdial
+cat > /etc/systemd/system/wvdial.service <<EOF
+[Unit]
+Description = Service to start up wvdial
+[Service]
+ExecStart=/usr/bin/wvdial
+ExecStartPre=-/usr/bin/killall pppd
+ExecStartPost=-/sbin/iptables -t nat -A POSTROUTING -o ppp0 -j MASQUERADE
+Restart=always
+RestartSec=10
+StartLimitInterval=300
+StartLimitBurst=30
+EOF
+systemctl daemon-reload
+
+# Tell wvdial to replace the default route
+cat > /etc/ppp/peers/wvdial <<EOF
+noauth
+name wvdial
+usepeerdns
+replacedefaultroute
+defaultroute
+EOF
+
+# Configure the USB modem
+cat > /etc/wvdial.conf << EOF
+[Dialer Defaults]
+Modem Type = Analog Modem
+ISDN = 0
+Init1 = ATZ
+Init2 = ATQ0 V1 E1 S0=0 &C1 &D2 +FCLASS=0
+New PPPD = yes
+Modem = /dev/ttyUSB0
+Baud = 921600
+Phone = ${USB_PHONE}
+Username = ${USB_USER}
+Password = ${USB_PASS}
+Stupid Mode = 1
+Dial Command = ATDT
+EOF
+
+# Add the udev rule to start the dialer when the stick is plugged
+cat > /etc/udev/rules.d/90-piwem-usb-stick.rules <<EOF
+ATTR{idVendor}=="${USB_VENDOR}", ATTR{idProduct}=="${USB_PRODUCT}", TAG+="systemd", ENV{SYSTEMD_WANTS}="wvdial.service"
+EOF
 
 # Kernel modules
 # ---------------------------------------------------------

@@ -26,8 +26,11 @@ DHCP_LEASE[1]=4h
 
 OSPF_AREA=0.0.0.1
 
+# Settings for my old E1750 3G stick
 USB_VENDOR=12d1
 USB_PRODUCT=1436
+USB_TTY=ttyUSB0
+
 USB_PHONE=*99***1#
 USB_USER=vodafone
 USB_PASS=vodafone
@@ -279,7 +282,7 @@ ISDN = 0
 Init1 = ATZ
 Init2 = ATQ0 V1 E1 S0=0 &C1 &D2 +FCLASS=0
 New PPPD = yes
-Modem = /dev/ttyUSB0
+Modem = /dev/${USB_TTY}
 Baud = 921600
 Phone = ${USB_PHONE}
 Username = ${USB_USER}
@@ -328,6 +331,13 @@ iface lo inet loopback
 allow-hotplug eth0
 auto eth0
 iface eth0 inet dhcp
+
+# H3372 4G modem
+allow-hotplug eth1
+auto eth1
+iface eth1 inet dhcp
+post-up   route add default gw 192.168.8.1 dev eth1
+post-down route del default dev eth1
 
 allow-hotplug wlan0
 iface wlan0 inet manual
